@@ -32,8 +32,13 @@ _start:
 	mov rsi, 0x5
 	pop rdi
 	syscall
-	xor rax, rax
-	mov rax, 34
+	hang:
+		nop
+		nop
+		jmp hang
+
+;	xor rax, rax
+;	mov rax, 34
 	syscall
 	xor rax, rax
 	xor rdi, rdi
