@@ -21,10 +21,73 @@ sockaddr_in:
 hello: db "hello woåld",10
 helloLen: equ $-hello
 
+indexFileName: db "index.html",0x0
+indexFileDescriptor: dd 0x0
+
 
 global _start
 section .text
-_start:
+
+breakpoint:
+    ret
+
+; openFile from path with the sys_open call
+; ASUMES Flags and MODE
+; args(eax:char*)
+; ret (eax:int fileDesciptor)
+; FUCKS ! rax, rdi, rsi, rdx
+
+openFile:
+    mov rdi, rax           ; gives path to file
+    xor rsi, rsi        ; set READOLNLY value 0x0
+    or  rsi, 0x3
+    xor rdx, rdx        ; set mode to 0 (nothing)
+    mov rax, 2
+    syscall
+    ret
+
+
+
+
+; getFileSize of fileDescriptor in bytes
+; args (eax:int FileDescriptor)
+; ret  (eax:int byteSize)
+; FUCKS ! rsi, rdi, rax,
+
+; struct stat {  116 bytes
+;     dev_t     st_dev;     /* ID of device containing file     8  bytes //offsett 0
+;     ino_t     st_ino;     /* inode number */                  8  bytes //offsett 8
+;     mode_t    st_mode;    /* protection */                    4  bytes //offsett 16
+;     nlink_t   st_nlink;   /* number of hard links */          8  bytes //offsett 20
+;     uid_t     st_uid;     /* user ID of owner */              4  bytes //offsett 28
+;     gid_t     st_gid;     /* group ID of owner */             4  bytes //offsett 32
+;     dev_t     st_rdev;    /* device ID (if special file)      8  bytes //offsett 36
+;     off_t     st_size;    /* total size, in bytes */          8  bytes //offsett 44
+;     blksize_t st_blksize; /* blocksize for file system I/O    8  bytes //offsett 52
+;     blkcnt_t  st_blocks;  /* number of 512B blocks allocated  8  bytes //offsett 60
+;     time_t    st_atime;   /* time of last access */           16 bytes //offsett 68
+;     time_t    st_mtime;   /* time of last modification */     16 bytes //offsett 84
+;     time_t    st_ctime;   /* time of last status change */    16 bytes //offsett 100
+; };  total 116
+
+getFileSize:
+    push rbp
+    mov rbp, rsp ; save old stack pointer
+    sub rsp, 144 ; 116 desimal bytes.
+    ; sys_fstat
+    ; rax = num, rdi = fileDescriptor, rsi = pointer to stat struct
+    mov rsi, rsp
+    mov rdi, rax ; moves fileDescriptor for syscall
+    mov rax, 5   ; sys_fstat
+    syscall
+    mov rax, rsp
+    add rax, 0x38
+    mov rax, [rax]
+    mov rsp, rbp
+    pop rbp
+    ret
+
+makeSocket:
 	
 	;Setting up stack and stack allocations.
 	mov rbp, rsp
@@ -91,7 +154,7 @@ _start:
 	mov rdx, helloLen ; SizeOf(Bytes)
 	syscall
 
-        ;closes the client socket
+    ;closes the client socket
 	; sys_close filDescriptor
 	; NB ! same file discriptor as above used.
 	mov eax, 3 ; sys_write
@@ -110,3 +173,16 @@ _start:
 	mov rax, 60 ; sys_exit
 	mov rdi, 0x0 ; exit code
 	syscall
+
+
+_start:
+        mov  rax, indexFileName
+        call openFile
+        call getFileSize
+        call breakpoint
+        ; terminates the program
+    	;sys_exit
+
+    	mov rdi, rax; exit code
+    	mov rax, 60 ; sys_exit
+    	syscall
