@@ -40,7 +40,6 @@ breakpoint:
 openFile:
     mov rdi, rax           ; gives path to file
     xor rsi, rsi        ; set READOLNLY value 0x0
-    or  rsi, 0x3
     xor rdx, rdx        ; set mode to 0 (nothing)
     mov rax, 2
     syscall
@@ -54,7 +53,7 @@ openFile:
 ; ret  (eax:int byteSize)
 ; FUCKS ! rsi, rdi, rax,
 
-; struct stat {  116 bytes
+; struct stat {  144 bytes
 ;     dev_t     st_dev;     /* ID of device containing file     8  bytes //offsett 0
 ;     ino_t     st_ino;     /* inode number */                  8  bytes //offsett 8
 ;     mode_t    st_mode;    /* protection */                    4  bytes //offsett 16
@@ -68,7 +67,7 @@ openFile:
 ;     time_t    st_atime;   /* time of last access */           16 bytes //offsett 68
 ;     time_t    st_mtime;   /* time of last modification */     16 bytes //offsett 84
 ;     time_t    st_ctime;   /* time of last status change */    16 bytes //offsett 100
-; };  total 116
+; };  total 144 its all lies there is some more padding.
 
 getFileSize:
     push rbp
@@ -87,6 +86,24 @@ getFileSize:
     pop rbp
     ret
 
+; mmap
+; maps a file to memory
+; args(eax;int fileDescriptor)
+; ret (eax:pointer addres of the file)
+; FUCKS ! rax, rdi, rsi, rdx, r10, r8, r9
+memoryMapFile:
+    mov r8, rax ; moves the fileDescriptor to the corresponding register
+    call getFileSize ; returns fileSize in rax
+    mov rsi, rax ; move the file size of the fileDescriptor to rsi
+    xor rdi, rdi ; sets sugested adress pointer to NULL pointer
+    mov rdx, 0x1 ; sets PROT_READ prot value for the file.
+    mov r10, 0x2 ; sets the flag mode to PRIVATE_MAP
+    mov r9, 0x0  ; sets the ofsett of the file to zero
+    mov rax, 9   ; sys_mmap
+    syscall
+    call breakpoint
+    ret
+
 makeSocket:
 	
 	;Setting up stack and stack allocations.
@@ -94,7 +111,7 @@ makeSocket:
 	sub rsp, 0x14
 
 	; sys_socket
-	; creats a socket,  Args:  family AF_INE in rdi, type SOCK_STREAM in  rsi, protocoll in  rdx
+	; creats a socket,  Args:  family AF_INE in rdi, type SOCK_STREAM in  rsi, protocol in  rdx
 	xor rdi, rdi
 	xor rsi, rsi
 	xor rax, rax
@@ -178,10 +195,14 @@ makeSocket:
 _start:
         mov  rax, indexFileName
         call openFile
-        call getFileSize
+        call memoryMapFile
         call breakpoint
-        ; terminates the program
-    	;sys_exit
+    	; sys_write FileDescriptor, bytes to write, sizeOf(bytes),
+        mov rdi, 1  ; the client socket from last sys call is moved for rax to rdi.
+        mov rsi, rax    ; Bytes
+        mov rax, 1     ; sys_write
+        mov rdx, 6 ; SizeOf(Bytes)
+        syscall
 
     	mov rdi, rax; exit code
     	mov rax, 60 ; sys_exit
