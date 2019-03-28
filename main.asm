@@ -18,12 +18,13 @@ sockaddr_in:
 
 ; hello test string and length. 
 
-hello: db "hello woåld",10
-helloLen: equ $-hello
+httpHeader: db "HTTP/1.x 200 OK",10,10
+httpHeaderLen: equ $-httpHeader
 
 indexFileName: db "index.html",0x0
 indexFileDescriptor: dd 0x0
-
+indexFileMap: dq 0x0
+indexFileSize: dq 0x0
 
 global _start
 section .text
@@ -101,7 +102,23 @@ memoryMapFile:
     mov r9, 0x0  ; sets the ofsett of the file to zero
     mov rax, 9   ; sys_mmap
     syscall
-    call breakpoint
+    ret
+
+
+; string length
+; arg(rax:pointer memoryloaction)
+; ret(rax: int Lenth of tring in bytes)
+stringLen:
+    mov rcx, 0x0
+    lea rbx, [rax-1]
+    counterLoop:
+        inc rbx
+        inc rcx
+        mov al, [rbx]
+        test al, al
+        jnz counterLoop
+    dec rcx
+    mov rax, rcx
     ret
 
 makeSocket:
@@ -167,8 +184,12 @@ makeSocket:
 	; sys_write FileDescriptor, bytes to write, sizeOf(bytes), 
 	mov rdi, rax  ; the client socket from last sys call is moved for rax to rdi.
 	mov rax, 1     ; sys_write
-	mov rsi, hello    ; Bytes
-	mov rdx, helloLen ; SizeOf(Bytes)
+	mov rsi, httpHeader
+	mov rdx, httpHeaderLen
+	syscall
+	mov rax, 1
+	mov rsi, [indexFileMap]  ; Bytes
+	mov rdx, [indexFileSize] ; SizeOf(Bytes)
 	syscall
 
     ;closes the client socket
@@ -196,14 +217,7 @@ _start:
         mov  rax, indexFileName
         call openFile
         call memoryMapFile
-        call breakpoint
-    	; sys_write FileDescriptor, bytes to write, sizeOf(bytes),
-        mov rdi, 1  ; the client socket from last sys call is moved for rax to rdi.
-        mov rsi, rax    ; Bytes
-        mov rax, 1     ; sys_write
-        mov rdx, 6 ; SizeOf(Bytes)
-        syscall
-
-    	mov rdi, rax; exit code
-    	mov rax, 60 ; sys_exit
-    	syscall
+        mov [indexFileMap], rax
+	call stringLen
+	mov [indexFileSize], rax
+        call makeSocket 
