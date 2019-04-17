@@ -1,2 +1,6 @@
 cmake-build-debug/
+*.o
+*.html
 a.out
+.idea
+CMakeLists.txt
