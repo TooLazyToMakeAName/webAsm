@@ -6,6 +6,20 @@ hex_xlat:       db "0123456789abcdef"
 lengthOffsett equ 16
 fileNameOffest equ 19
 bufferSize equ 0xb40
+fileTypeOffset equ 18
+
+
+initHashMap:
+    mov r8, -1 ; moves the fileDescriptor to the corresponding register
+    mov rsi, rax ; move the file size of the fileDescriptor to rsi
+    mov rdi, 0 ; sets sugested adress pointer to NULL pointer
+    mov rdx, 3 ; sets PROT_READ | prot_write  prot value for the file.
+    mov r10, 0x21 ; sets the flag mode to anonymusMap
+    mov r9, 0  ; sets the ofsett of the file to zero
+    mov rax, 9   ; sys_mmap
+    syscall
+    ret
+
 
 stringLen:
     push rcx
@@ -127,7 +141,7 @@ hash:
         ret
 
 
-_start:
+actualrStart:
 	xor rax, rax
 	push rax
 	push  byte '.'
@@ -154,20 +168,38 @@ _start:
         mov rbx, r15
         mov r14, 0
         .innerloop:
+            
             lea rax, [rbx+fileNameOffest]
+            
             mov r12, rax
             call stringLen
+            
             mov rdx, rax
             mov rsi, r12
             call printString
             call printNewLine
+            
             mov rax, rsi
             call hash
-            mov rdi, rax
+
+            push rdx
+            mov rdx, 0
+            mov rcx, 0x10
+            div rcx
+            mov rdi, rdx
+            
             call register_to_hex
             call printNewLine
+            pop rdx
+
+            xor rdi, rdi
+            mov dil, [rbx+fileTypeOffset]
+            call register_to_hex
+            call printNewLine
+
             movzx r9, word [rbx+lengthOffsett]
             lea rbx, [rbx+r9]
+            
             add r14, r9
             cmp r14, r13
             jne .innerloop
@@ -176,5 +208,17 @@ _start:
     mov rdi, 0
 	xor rax, rax
 	mov al, 60
+	syscall
+_start:
+    mov rax,100 
+    call initHashMap
+    mov rdi, rax
+    .notyet: ; This is a label
+    neg rdi 
+    jl .notyet
+    call register_to_hex
+    call printNewLine
+    mov rdi, 0
+	mov rax, 60
 	syscall
 
