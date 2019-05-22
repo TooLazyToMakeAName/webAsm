@@ -2,7 +2,7 @@ BITS 64
 
 section .data
 
-bufferSize equ 0xb40
+bufferSize equ 0xb40 ; double length of a maxed sized dent.
 lengthOffsett equ 16
 fileNameOffest equ 19
 fileTypeOffset equ 18
@@ -34,7 +34,7 @@ getdents64:
     pop rdi
 
     ret
- 
+
 getNextFile:
    push rbx
    mov rbx, [nextDent]
@@ -43,18 +43,18 @@ getNextFile:
    
    call getdents64
    mov [dentsByteSize], rax
-   xor rax, rax
-   mov [nextDent],rax
-   mov rax, [dentsByteSize]
+   xor rbx, rbx 
+   mov [nextDent],rbx
    test rax, rax
    je .end
-   
+
    .dentHandler: ; rbx = nextDent
    lea rax, [rbx + dirent64Buff]
-   add rax, [rax+lengthOffsett]
-   mov [nextDent], rax
-   mov rax, rbx
-   lea rax, [rax+dirent64Buff]
+   add rax, lengthOffsett
+   mov ax, [rax]
+   movzx rax, ax
+   add [nextDent], rax
+   lea rax, [rbx+dirent64Buff]
 
    .end:
    pop rbx

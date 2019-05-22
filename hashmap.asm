@@ -114,6 +114,7 @@ astart:
 	xor rax, rax
 	mov al, 60
 	syscall
+
 _start:
     xor rax, rax
 	push rax
@@ -126,7 +127,13 @@ _start:
 	xor rdx, rdx 
 	syscall	
 
+    mov rbx, rax
+    
+    .loopFiles:
+    mov rax, rbx
     call getNextFile
+    test rax,rax
+    je .exit
     
     add rax, 19
     mov rsi, rax
@@ -134,18 +141,9 @@ _start:
     mov rdx, rax
     call printString
     call printNewLine
-    
-    call getNextFile
-    
-    add rax, 19
-    mov rsi, rax
-    call stringLen
-    mov rdx, rax
-    call printString
-    call printNewLine
+    jmp .loopFiles
 
-
-
+    .exit:
     mov rax, 60
     mov rdi, 0
     syscall
