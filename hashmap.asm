@@ -41,79 +41,45 @@ hash:
         pop rcx
         ret
 
+; rax = pointer to key C string (zero byte terminated)
+; rbx = value (value or memory pointer)
+; rcx = hashmap 
+; rdx = size
+; reurn rax = 0 is good else bad  
+insertInToHashmap:
+    push r9
 
-astart:
-	xor rax, rax
-	push rax
-	push  byte '.'
+    call hash
 
-	; sys_open(".", 0, 0)
-	mov al, 2      
-	mov rdi, rsp   
-	xor rsi, rsi 
-	xor rdx, rdx 
-	syscall	
+    mov r9, rdx
+    xor rdx, rdx
+    div r9
+    push rdx
 
-    mov r8, rax
-	mov rdx, bufferSize 
-    mov rbp, rsp
-	sub rsp, rdx
-    mov r15, rsp 
+    mov rax, 0x10
+    mul rdx
     
-    readFiles:
-	    mov rdx, bufferSize 
-        call getdents64
-        test rax, rax
-        jz endReadFiles
-        mov r13, rax
-        mov rbx, r15
-        mov r14, 0
-        .innerloop:
-            
-            lea rax, [rbx+fileNameOffest]
-            
-            mov r12, rax
-            call stringLen
-            
-            mov rdx, rax
-            mov rsi, r12
-            call printString
-            call printNewLine
-            
-            mov rax, rsi
-            call hash
+    add rax, rcx
+    mov rdx, [rax]
+    test rdx, rdx
+    je .end
 
-            push rdx
-            mov rdx, 0
-            mov rcx, 0x10
-            div rcx
-            push rax
-            mov rax, rdx
-            call printRAXtoHex
-            pop rax
-            call printNewLine
-            pop rdx
+    pop rdx
+    mov [rax], rdx
+    add rax, 0x8
+    mov [rax], rbx
+    mov rax, 0xFFFFFFFFFFFFFFFF 
+   
+    .end
+    inc rdx
+    mov rax, rdx
 
-            xor rdi, rdi
-            mov dil, [rbx+fileTypeOffset]
-            push rax
-            mov rax, rdi
-            call printRAXtoHex 
-            pop rax
-            call printNewLine
+    pop r9 
 
-            movzx r9, word [rbx+lengthOffsett]
-            lea rbx, [rbx+r9]
-            
-            add r14, r9
-            cmp r14, r13
-            jne .innerloop
-           jmp readFiles
-    endReadFiles:
-    mov rdi, 0
-	xor rax, rax
-	mov al, 60
-	syscall
+    ret
+
+
+
 
 _start:
     xor rax, rax
