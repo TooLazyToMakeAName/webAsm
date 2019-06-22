@@ -60,6 +60,7 @@ printNewLine:
 
 ; 
 printRAXtoHex:
+    push rax
     push rdi 
     mov rdi, rax 
     push rdi
@@ -99,5 +100,6 @@ ALIGN 16
     pop rcx
     pop rdi
     pop rdi
+    pop rax
     ret
  

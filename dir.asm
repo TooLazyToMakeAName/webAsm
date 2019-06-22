@@ -2,7 +2,7 @@ BITS 64
 
 section .data
 
-bufferSize equ 0xb40 ; double length of a maxed sized dent.
+bufferSize equ 0x120 ; double length of a maxed sized dent.
 lengthOffsett equ 16
 fileNameOffest equ 19
 fileTypeOffset equ 18

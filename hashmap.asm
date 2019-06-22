@@ -3,6 +3,9 @@ BITS 64
 
 %include "print.asm"
 %include "dir.asm"
+
+section .text
+
 initHashMap:
     mov r8, -1 ; moves the fileDescriptor to the corresponding register
     mov rsi, rax ; move the file size of the fileDescriptor to rsi
@@ -41,47 +44,83 @@ hash:
         pop rcx
         ret
 
+modulo:
+
+    push rdx
+    xor rdx, rdx
+    div rbx
+    mov rax, rdx
+    pop rdx
+    
+    ret
+
+
+; rax = pointer to key C string (zero byte terminated)
+; rbx = hashmap 
+; rcx = size
+; reurn rax 
+
+getFromHashMap:
+    call hash
+
+    push rbx
+
+    mov rbx, rcx
+    call modulo
+
+    pop rbx
+
+    ; NOTE rax is now hasmap index as we have goten a offset and dont need the string anymore!!!
+
+    lea rax, [rax*8]
+    add rax, rcx
+    mov rax, [rax]
+
+    ret
+
+
+
 ; rax = pointer to key C string (zero byte terminated)
 ; rbx = value (value or memory pointer)
 ; rcx = hashmap 
 ; rdx = size
 ; reurn rax = 0 is good else bad  
 insertInToHashmap:
-    push r9
-
     call hash
 
-    mov r9, rdx
-    xor rdx, rdx
-    div r9
-    push rdx
+    push rbx
 
-    mov rax, 0x10
-    mul rdx
-    
+    mov rbx, rdx
+    call modulo
+
+    pop rbx
+
+    ; NOTE rax is now hasmap index as we have goten a offset and dont need the string anymore!!!
+
+    lea rax, [rax*8]
     add rax, rcx
     mov rdx, [rax]
     test rdx, rdx
-    je .end
+    jne .end
 
-    pop rdx
-    mov [rax], rdx
-    add rax, 0x8
     mov [rax], rbx
-    mov rax, 0xFFFFFFFFFFFFFFFF 
+    mov rax, 0
+
+    ret
    
-    .end
+    .end:
     inc rdx
     mov rax, rdx
-
-    pop r9 
-
     ret
 
 
-
+br:
+    ret
 
 _start:
+    mov rax, 5*8
+    call initHashMap
+    mov r15, rax ; r15 is hashmap buffer. 
     xor rax, rax
 	push rax
 	push  byte '.'
@@ -93,20 +132,28 @@ _start:
 	xor rdx, rdx 
 	syscall	
 
-    mov rbx, rax
+    mov r12, rax ; use r12 as file descriptor buffer.
     
     .loopFiles:
-    mov rax, rbx
+    mov rax, r12
     call getNextFile
-    test rax,rax
-    je .exit
+    test rax,rax ; reruns 0 if no bytes could be read!
+    jz .exit
     
-    add rax, 19
-    mov rsi, rax
+    add rax, 19    ; offset to get the file name ; 
+    push rax
+    mov rsi, rax   ; stringLen take argument in rsi
     call stringLen
-    mov rdx, rax
-    call printString
-    call printNewLine
+    mov rdx, rax   ; prints moves the string to print to rdx so syscall can be done directy.
+    call printString  
+    call printNewLine ; adds a new lineA
+    pop rax
+    mov rcx, r15
+    mov rbx, 0x0123456789abcdef
+    mov rdx, 5
+    call insertInToHashmap
+    call br
+
     jmp .loopFiles
 
     .exit:
