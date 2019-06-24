@@ -29,9 +29,6 @@ indexFileSize: dq 0x0
 global _start
 section .text
 
-breakpoint:
-    ret
-
 ; openFile from path with the sys_open call
 ; ASUMES Flags and MODE
 ; args(eax:char*)
@@ -101,56 +98,6 @@ memoryMapFile:
     mov rax, 9   ; sys_mmap
     syscall
     ret
-
-
-; string length
-; arg(rax:pointer memoryloaction)
-; ret(rax: int Lenth of tring in bytes)
-stringLen:
-    mov rcx, 0x0
-    lea rbx, [rax-1]
-    counterLoop:
-        inc rbx
-        inc rcx
-        mov al, [rbx]
-        test al, al
-        jnz counterLoop
-    dec rcx
-    mov rax, rcx
-    ret
-
-;hasing fuction for strings 
-;uses the djb2 hashing alorithem 
-;NB! Not to be used for crypto !!!!!!
-;arg(rax: pointer string in memorylocation)
-;ret(rax: int hashed value)
-hash:
-        mov rcx, rax
-        mov rax, 5381
-    .loop:
-        mov rbx, rax
-        shr rax, 5
-        add rax, rbx
-        xor rbx, rbx 
-        mov bl, [rcx]
-        xor rax, rbx
-        inc rcx
-        test bl, bl
-        jne .loop
-        ret
-allocPublicMem:
-    mov r8, rax ; moves the fileDescriptor to the corresponding register
-    call getFileSize ; returns fileSize in rax
-    mov rsi, rax ; move the file size of the fileDescriptor to rsi
-    xor rdi, rdi ; sets sugested adress pointer to NULL pointer
-    mov rdx, 0x1 ; sets PROT_READ prot value for the file.
-    mov r10, 0x2 ; sets the flag mode to PRIVATE_MAP
-    mov r9, 0x0  ; sets the ofsett of the file to zero
-    mov rax, 9   ; sys_mmap
-    syscall
-    ret
-
-
     
 makeSocket:
 	

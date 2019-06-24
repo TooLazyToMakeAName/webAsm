@@ -73,7 +73,7 @@ getFromHashMap:
     ; NOTE rax is now hasmap index as we have goten a offset and dont need the string anymore!!!
 
     lea rax, [rax*8]
-    add rax, rcx
+    add rax, rbx
     mov rax, [rax]
 
     ret
@@ -114,9 +114,6 @@ insertInToHashmap:
     ret
 
 
-br:
-    ret
-
 _start:
     mov rax, 5*8
     call initHashMap
@@ -152,9 +149,9 @@ _start:
     mov rbx, 0x0123456789abcdef
     mov rdx, 5
     call insertInToHashmap
-    call br
 
     jmp .loopFiles
+
 
     .exit:
     mov rax, 60
