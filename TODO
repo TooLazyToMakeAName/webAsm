@@ -1,0 +1,7 @@
+1. simplyfy print lib from stringLen printStrint, and printNewLine to a simple print println with string in rax. 
+2. Extract fileshandelig to a seperate file, and make call preserve state
+3. Extract networing to seperate file, and make calls preserve state.
+4. create summery function for network
+5. Implement get function parser(http), creat http handel file
+6. Multithreading
+7. create file mapping and hasing loop(see hashmap main)
